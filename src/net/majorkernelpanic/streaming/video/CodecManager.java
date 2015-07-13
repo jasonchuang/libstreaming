@@ -30,6 +30,8 @@ import android.os.Build;
 import android.util.Log;
 import android.util.SparseArray;
 
+import net.majorkernelpanic.streaming.hw.MediaCodecListUtils;
+
 @SuppressLint("InlinedApi")
 public class CodecManager {
 
@@ -149,8 +151,8 @@ public class CodecManager {
 			Log.v(TAG,"Searching supported color formats for mime type \""+mimeType+"\"...");
 
 			// We loop through the encoders, apparently this can take up to a sec (testes on a GS3)
-			for(int j = MediaCodecList.getCodecCount() - 1; j >= 0; j--){
-				MediaCodecInfo codecInfo = MediaCodecList.getCodecInfoAt(j);
+			for(int j = MediaCodecListUtils.getCodecCount() - 1; j >= 0; j--){
+				MediaCodecInfo codecInfo = MediaCodecListUtils.getCodecInfoAt(j);
 				if (!codecInfo.isEncoder()) continue;
 
 				String[] types = codecInfo.getSupportedTypes();

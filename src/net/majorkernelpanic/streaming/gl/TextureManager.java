@@ -124,7 +124,11 @@ public class TextureManager {
 		mSurfaceTexture.updateTexImage();
 	}
 	
-	public void drawFrame() {	
+	public void drawFrame() {
+        drawFrame(0.0f, 0.0f);
+    }
+
+	public void drawFrame(float scaleX, float scaleY) {
 		checkGlError("onDrawFrame start");
 		mSurfaceTexture.getTransformMatrix(mSTMatrix);
 
@@ -153,6 +157,12 @@ public class TextureManager {
 		checkGlError("glEnableVertexAttribArray maTextureHandle");
 
 		Matrix.setIdentityM(mMVPMatrix, 0);
+        if (scaleX != 0.0f && scaleY != 0.0f) {
+            float posX = (1 / scaleX - 1.0f) * -1.0f;
+            float posY = (1 / scaleY - 1.0f) * -1.0f;
+            Matrix.scaleM(mMVPMatrix, 0, scaleX, scaleY, 1.0f);
+            Matrix.translateM(mMVPMatrix, 0, posX, posY, 0.0f);
+        }
 		GLES20.glUniformMatrix4fv(muMVPMatrixHandle, 1, false, mMVPMatrix, 0);
 		GLES20.glUniformMatrix4fv(muSTMatrixHandle, 1, false, mSTMatrix, 0);
 

@@ -28,6 +28,7 @@ import net.majorkernelpanic.streaming.audio.AMRNBStream;
 import net.majorkernelpanic.streaming.audio.AudioQuality;
 import net.majorkernelpanic.streaming.audio.AudioStream;
 import net.majorkernelpanic.streaming.gl.SurfaceView;
+import net.majorkernelpanic.streaming.rtp.AbstractPacketizer;
 import net.majorkernelpanic.streaming.video.H263Stream;
 import net.majorkernelpanic.streaming.video.H264Stream;
 import net.majorkernelpanic.streaming.video.VideoQuality;
@@ -64,6 +65,7 @@ public class SessionBuilder {
 	// Default configuration
 	private VideoQuality mVideoQuality = VideoQuality.DEFAULT_VIDEO_QUALITY;
 	private AudioQuality mAudioQuality = AudioQuality.DEFAULT_AUDIO_QUALITY;
+	private AbstractPacketizer mVideoPacketizer;
 	private Context mContext;
 	private int mVideoEncoder = VIDEO_H263; 
 	private int mAudioEncoder = AUDIO_AMRNB;
@@ -128,7 +130,7 @@ public class SessionBuilder {
 			session.addVideoTrack(new H263Stream(mCamera));
 			break;
 		case VIDEO_H264:
-			H264Stream stream = new H264Stream(mCamera);
+			H264Stream stream = new H264Stream(mCamera, mVideoPacketizer);
 			if (mContext!=null) 
 				stream.setPreferences(PreferenceManager.getDefaultSharedPreferences(mContext));
 			session.addVideoTrack(stream);
@@ -181,6 +183,11 @@ public class SessionBuilder {
 		return this;
 	}
 	
+    public SessionBuilder setVideoPacketizer(AbstractPacketizer packetizer) {
+        mVideoPacketizer = packetizer;
+        return this;
+    }
+
 	/** Sets the audio encoder. */
 	public SessionBuilder setAudioEncoder(int encoder) {
 		mAudioEncoder = encoder;

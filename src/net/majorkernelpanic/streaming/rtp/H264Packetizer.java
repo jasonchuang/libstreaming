@@ -54,6 +54,11 @@ public class H264Packetizer extends AbstractPacketizer implements Runnable {
 		socket.setClockFrequency(90000);
 	}
 
+    public H264Packetizer(RtpSocket socket) {
+        super(socket);
+        socket.setClockFrequency(90000);
+    }
+
 	public void start() {
 		if (t == null) {
 			t = new Thread(this);
@@ -132,7 +137,7 @@ public class H264Packetizer extends AbstractPacketizer implements Runnable {
 	 * If it is too big, we split it in FU-A units (RFC 3984).
 	 */
 	@SuppressLint("NewApi")
-	private void send() throws IOException, InterruptedException {
+	protected void send() throws IOException, InterruptedException {
 		int sum = 1, len = 0, type;
 
 		if (streamType == 0) {

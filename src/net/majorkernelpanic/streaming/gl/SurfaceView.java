@@ -86,10 +86,14 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 	// Allows to force the aspect ratio of the preview
 	private ViewAspectRatioMeasurer mVARM = new ViewAspectRatioMeasurer();
 	
+    private boolean mIsMinimized;
+    private float mScaleX, mScaleY;
+
 	public SurfaceView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		mHandler = new Handler();
 		getHolder().addCallback(this);
+        mIsMinimized = false;
 	}	
 
 	public void setAspectRatioMode(int mode) {
@@ -147,7 +151,12 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 
 						mViewSurfaceManager.makeCurrent();
 						mTextureManager.updateFrame();
-						mTextureManager.drawFrame();
+                        if (mIsMinimized) {
+                            mTextureManager.drawFrame(mScaleX, mScaleY);
+                        } else {
+                            mTextureManager.drawFrame();
+                        }
+		Log.d(TAG,"mTextureManager.drawFrame.");
 						mViewSurfaceManager.swapBuffer();
 
 						if (mCodecSurfaceManager != null) {
@@ -225,6 +234,15 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 		}
 	}
 		
+    public void setMinimized(boolean minimized) {
+        mIsMinimized = minimized;
+    }
+
+    public void setScale(float scaleX, float scaleY) {
+        mScaleX = scaleX;
+        mScaleY = scaleY;
+    }
+
 	/**
 	 * This class is a helper to measure views that require a specific aspect ratio.
 	 * @author Jesper Borgstrup

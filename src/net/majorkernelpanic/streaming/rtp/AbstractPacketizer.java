@@ -47,9 +47,13 @@ abstract public class AbstractPacketizer {
 	protected long ts = 0;
 
 	public AbstractPacketizer() {
+        this(new RtpSocket());
+    }
+
+    public AbstractPacketizer(RtpSocket rtpSocket) {
 		int ssrc = new Random().nextInt();
 		ts = new Random().nextInt();
-		socket = new RtpSocket();
+        socket = rtpSocket;
 		socket.setSSRC(ssrc);
 	}
 

@@ -40,6 +40,8 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
+import android.media.audiofx.AcousticEchoCanceler;
+import android.media.audiofx.AudioEffect.Descriptor;
 import android.os.Build;
 import android.os.Environment;
 import android.service.textservice.SpellCheckerService.Session;
@@ -89,6 +91,7 @@ public class AACStream extends AudioStream {
 	private int mProfile, mSamplingRateIndex, mChannel, mConfig;
 	private SharedPreferences mSettings = null;
 	private AudioRecord mAudioRecord = null;
+    private AcousticEchoCanceler mAEC;
 	private Thread mThread = null;
 
 	public AACStream() {
@@ -198,7 +201,12 @@ public class AACStream extends AudioStream {
 
 		((AACLATMPacketizer)mPacketizer).setSamplingRate(mQuality.samplingRate);
 
-		mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, mQuality.samplingRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+        mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, mQuality.samplingRate,
+                AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+        if (AcousticEchoCanceler.isAvailable()) {
+            initAEC(mAudioRecord.getAudioSessionId());
+        }
+
 		mMediaCodec = MediaCodec.createEncoderByType("audio/mp4a-latm");
 		MediaFormat format = new MediaFormat();
 		format.setString(MediaFormat.KEY_MIME, "audio/mp4a-latm");
@@ -248,16 +256,45 @@ public class AACStream extends AudioStream {
 
 	}
 
+    public boolean initAEC(int audioSession) {
+        Log.d(TAG, "initAEC audioSession:" + audioSession);
+        if (mAEC != null) {
+            return false;
+        }
+
+        mAEC = AcousticEchoCanceler.create(audioSession);
+        mAEC.setEnabled(true);
+        Descriptor descriptor = mAEC.getDescriptor();
+        Log.d(TAG, "AcousticEchoCanceler " +
+                "name: " + descriptor.name + ", " +
+                "implementor: " + descriptor.implementor + ", " +
+                "connectMode: " + descriptor.connectMode + ", " +
+                "type: " + descriptor.type + ", " +
+                "uuid: " + descriptor.uuid);
+        return mAEC.getEnabled();
+    }
+
+    public boolean releaseAEC() {
+        Log.d(TAG, "releaseAEC");
+        if (mAEC == null) {
+            return false;
+        }
+
+        mAEC.setEnabled(false);
+        mAEC.release();
+        return true;
+    }
+
 	/** Stops the stream. */
 	public synchronized void stop() {
 		if (mStreaming) {
-			if (mMode==MODE_MEDIACODEC_API) {
-				Log.d(TAG, "Interrupting threads...");
+            if (mMode != MODE_MEDIARECORDER_API) {
 				mThread.interrupt();
+                releaseAEC();
 				mAudioRecord.stop();
 				mAudioRecord.release();
 				mAudioRecord = null;
-			}
+            }
 			super.stop();
 		}
 	}

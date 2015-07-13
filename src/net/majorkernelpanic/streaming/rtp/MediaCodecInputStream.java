@@ -28,6 +28,8 @@ import android.annotation.SuppressLint;
 import android.media.MediaCodec;
 import android.media.MediaCodec.BufferInfo;
 import android.media.MediaFormat;
+import android.media.MediaMuxer;
+import android.media.MediaMuxer.OutputFormat;
 import android.util.Log;
 
 /**
@@ -46,17 +48,28 @@ public class MediaCodecInputStream extends InputStream {
 	private ByteBuffer mBuffer = null;
 	private int mIndex = -1;
 	private boolean mClosed = false;
+    private int mMediaTrackIndex;
 	
 	public MediaFormat mMediaFormat;
+    private MediaMuxer mMediaMuxer;
 
 	public MediaCodecInputStream(MediaCodec mediaCodec) {
 		mMediaCodec = mediaCodec;
 		mBuffers = mMediaCodec.getOutputBuffers();
+
+        try {
+            mMediaMuxer = new MediaMuxer("/sdcard/media_muxer_single.mp4", OutputFormat.MUXER_OUTPUT_MPEG_4);
+         } catch (IOException e) {
+         }
 	}
 
 	@Override
 	public void close() {
 		mClosed = true;
+        if (mMediaMuxer != null) {
+            mMediaMuxer.stop();
+            mMediaMuxer.release();
+        }
 	}
 
 	@Override
@@ -76,12 +89,22 @@ public class MediaCodecInputStream extends InputStream {
 						//Log.d(TAG,"Index: "+mIndex+" Time: "+mBufferInfo.presentationTimeUs+" size: "+mBufferInfo.size);
 						mBuffer = mBuffers[mIndex];
 						mBuffer.position(0);
+
+                        if (mMediaMuxer != null) {
+                            mMediaMuxer.writeSampleData(mMediaTrackIndex, mBuffer, mBufferInfo);
+                        }
 						break;
 					} else if (mIndex == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
 						mBuffers = mMediaCodec.getOutputBuffers();
 					} else if (mIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
 						mMediaFormat = mMediaCodec.getOutputFormat();
 						Log.i(TAG,mMediaFormat.toString());
+
+                        if (mMediaMuxer != null) {
+                            mMediaTrackIndex = mMediaMuxer.addTrack(mMediaFormat);
+                            mMediaMuxer.start();
+                        }
+
 					} else if (mIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
 						Log.v(TAG,"No buffer available...");
 						//return 0;

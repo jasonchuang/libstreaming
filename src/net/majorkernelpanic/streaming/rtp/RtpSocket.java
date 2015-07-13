@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -52,8 +53,8 @@ public class RtpSocket implements Runnable {
 	public static final int MTU = 1300;
 
 	private MulticastSocket mSocket;
-	private DatagramPacket[] mPackets;
-	private byte[][] mBuffers;
+	protected DatagramPacket[] mPackets;
+	protected byte[][] mBuffers;
 	private long[] mTimestamps;
 
 	private SenderReport mReport;
@@ -66,7 +67,7 @@ public class RtpSocket implements Runnable {
 	private long mClock = 0;
 	private long mOldTimestamp = 0;
 	private int mSsrc, mSeq = 0, mPort = -1;
-	private int mBufferCount, mBufferIn, mBufferOut;
+	protected int mBufferCount, mBufferIn, mBufferOut;
 	private int mCount = 0;
 	private byte mTcpHeader[];
 	protected OutputStream mOutputStream = null;
@@ -92,7 +93,7 @@ public class RtpSocket implements Runnable {
 
 		for (int i=0; i<mBufferCount; i++) {
 
-			mBuffers[i] = new byte[MTU];
+			mBuffers[i] = new byte[getMtu()];
 			mPackets[i] = new DatagramPacket(mBuffers[i], 1);
 
 			/*							     Version(2)  Padding(0)					 					*/
@@ -120,6 +121,10 @@ public class RtpSocket implements Runnable {
 		}
 		
 	}
+
+    protected int getMtu() {
+        return MTU;
+    }
 
 	private void resetFifo() {
 		mCount = 0;
@@ -262,7 +267,7 @@ public class RtpSocket implements Runnable {
 	 **/
 	public void updateTimestamp(long timestamp) {
 		mTimestamps[mBufferIn] = timestamp;
-		setLong(mBuffers[mBufferIn], (timestamp/100L)*(mClock/1000L)/10000L, 4, 8);
+		setLong(mBuffers[mBufferIn], timestamp, 4, 8);
 	}
 
 	/** Sets the marker in the RTP packet. */
@@ -299,13 +304,11 @@ public class RtpSocket implements Runnable {
 				}
 				mReport.update(mPackets[mBufferOut].getLength(), (mTimestamps[mBufferOut]/100L)*(mClock/1000L)/10000L);
 				mOldTimestamp = mTimestamps[mBufferOut];
-				if (mCount++>30) {
-					if (mTransport == TRANSPORT_UDP) {
-						mSocket.send(mPackets[mBufferOut]);
-					} else {
-						sendTCP();
-					}
-				}
+                if (getTransportProtocol() == TRANSPORT_UDP) {
+                    mSocket.send(mPackets[mBufferOut]);
+                } else {
+                    sendTCP();
+                }
 				if (++mBufferOut>=mBufferCount) mBufferOut = 0;
 				mBufferRequested.release();
 			}
@@ -316,7 +319,11 @@ public class RtpSocket implements Runnable {
 		resetFifo();
 	}
 
-	private void sendTCP() {
+    protected int getTransportProtocol() {
+        return mTransport;
+    }
+
+	protected void sendTCP() {
 		synchronized (mOutputStream) {
 			int len = mPackets[mBufferOut].getLength();
 			Log.d(TAG,"sent "+len);

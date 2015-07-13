@@ -68,6 +68,10 @@
     -->
     <import file="custom_rules.xml" optional="true" />
 
+    <target name="-post-build">
+        <copy file="./bin/classes.jar" tofile="./bin/libstreaming.jar" overwrite="true"/>
+    </target>
+
     <!-- Import the actual build file.
 
          To customize existing targets, there are two options:

@@ -30,6 +30,7 @@ import net.majorkernelpanic.streaming.exceptions.ConfNotSupportedException;
 import net.majorkernelpanic.streaming.exceptions.StorageUnavailableException;
 import net.majorkernelpanic.streaming.hw.EncoderDebugger;
 import net.majorkernelpanic.streaming.mp4.MP4Config;
+import net.majorkernelpanic.streaming.rtp.AbstractPacketizer;
 import net.majorkernelpanic.streaming.rtp.H264Packetizer;
 import android.annotation.SuppressLint;
 import android.content.SharedPreferences.Editor;
@@ -69,12 +70,16 @@ public class H264Stream extends VideoStream {
 	 * @throws IOException
 	 */
 	public H264Stream(int cameraId) {
-		super(cameraId);
-		mMimeType = "video/avc";
-		mCameraImageFormat = ImageFormat.NV21;
-		mVideoEncoder = MediaRecorder.VideoEncoder.H264;
-		mPacketizer = new H264Packetizer();
-	}
+        this(cameraId, new H264Packetizer());
+    }
+
+    public H264Stream(int cameraId, AbstractPacketizer packetizer) {
+        super(cameraId);
+        mMimeType = "video/avc";
+        mCameraImageFormat = ImageFormat.NV21;
+        mVideoEncoder = MediaRecorder.VideoEncoder.H264;
+        mPacketizer = packetizer;
+    }
 
 	/**
 	 * Returns a description of the stream using SDP. It can then be included in an SDP file.
@@ -125,10 +130,6 @@ public class H264Stream extends VideoStream {
 		createCamera();
 		updateCamera();
 		try {
-			if (mQuality.resX>=640) {
-				// Using the MediaCodec API with the buffer method for high resolutions is too slow
-				mMode = MODE_MEDIARECORDER_API;
-			}
 			EncoderDebugger debugger = EncoderDebugger.debug(mSettings, mQuality.resX, mQuality.resY);
 			return new MP4Config(debugger.getB64SPS(), debugger.getB64PPS());
 		} catch (Exception e) {

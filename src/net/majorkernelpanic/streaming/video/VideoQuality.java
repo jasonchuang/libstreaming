@@ -143,5 +143,30 @@ public class VideoQuality {
 		Log.v(TAG,supportedFpsRangesStr);
 		return maxFps;
 	}
+
+    public static int[] determineClosestFpsRange(Camera.Parameters parameters, int framerate) {
+        int[] closestFps = null;
+        String supportedFpsRangesStr = "Supported frame rates: ";
+        List<int[]> supportedFpsRanges = parameters.getSupportedPreviewFpsRange();
+
+        for (Iterator<int[]> it = supportedFpsRanges.iterator(); it.hasNext();) {
+            int[] interval = it.next();
+            if (closestFps == null) {
+                closestFps = interval;
+            }
+            supportedFpsRangesStr += interval[0] / 1000 + "-" + interval[1] / 1000 + "fps" + (it.hasNext() ? ", " : "");
+            if (fpsRangeDelta(framerate, closestFps) > fpsRangeDelta(framerate, interval)) {
+                closestFps = interval;
+            }
+        }
+
+        Log.v(TAG, supportedFpsRangesStr);
+        return closestFps;
+    }
+
+    private static int fpsRangeDelta(int framerate, int[] interveal) {
+        int fps = framerate * 1000;
+        return Math.abs(fps - interveal[0]) + Math.abs(fps - interveal[1]);
+    }
 	
 }

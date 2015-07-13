@@ -28,12 +28,14 @@ import java.util.Random;
 import net.majorkernelpanic.streaming.audio.AudioStream;
 import net.majorkernelpanic.streaming.rtp.AbstractPacketizer;
 import net.majorkernelpanic.streaming.video.VideoStream;
+
 import android.annotation.SuppressLint;
 import android.media.MediaCodec;
 import android.media.MediaRecorder;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
+import android.os.Build;
 import android.util.Log;
 
 /**
@@ -81,6 +83,10 @@ public abstract class MediaStream implements Stream {
 			// Will be set to MODE_MEDIACODEC_API at some point...
 			sSuggestedMode = MODE_MEDIACODEC_API;
 			Log.i(TAG,"Phone supports the MediaCoded API");
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                sSuggestedMode = MODE_MEDIACODEC_API_2;
+            }
 		} catch (ClassNotFoundException e) {
 			sSuggestedMode = MODE_MEDIARECORDER_API;
 			Log.i(TAG,"Phone does not support the MediaCodec API");
@@ -138,7 +144,6 @@ public abstract class MediaStream implements Stream {
 		mOutputStream = stream;
 		mChannelIdentifier = channelIdentifier;
 	}
-	
 	
 	/**
 	 * Sets the Time To Live of packets sent over the network.

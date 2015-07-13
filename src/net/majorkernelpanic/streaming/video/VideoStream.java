@@ -240,6 +240,7 @@ public abstract class VideoStream extends MediaStream {
 	public void setVideoQuality(VideoQuality videoQuality) {
 		if (!mRequestedQuality.equals(videoQuality)) {
 			mRequestedQuality = videoQuality.clone();
+            mQuality = mRequestedQuality;
 			mUpdated = false;
 		}
 	}
@@ -587,7 +588,7 @@ public abstract class VideoStream extends MediaStream {
 				}
 				parameters.setRecordingHint(true);
 				mCamera.setParameters(parameters);
-				mCamera.setDisplayOrientation(mOrientation);
+				mCamera.setDisplayOrientation(mRequestedOrientation);
 
 				try {
 					if (mMode == MODE_MEDIACODEC_API_2) {
@@ -637,7 +638,7 @@ public abstract class VideoStream extends MediaStream {
 
 		Parameters parameters = mCamera.getParameters();
 		mQuality = VideoQuality.determineClosestSupportedResolution(parameters, mQuality);
-		int[] max = VideoQuality.determineMaximumSupportedFramerate(parameters);
+        int[] max = VideoQuality.determineClosestFpsRange(parameters, mQuality.framerate);
 		
 		double ratio = (double)mQuality.resX/(double)mQuality.resY;
 		mSurfaceView.requestAspectRatio(ratio);
@@ -648,7 +649,7 @@ public abstract class VideoStream extends MediaStream {
 
 		try {
 			mCamera.setParameters(parameters);
-			mCamera.setDisplayOrientation(mOrientation);
+			mCamera.setDisplayOrientation(mRequestedOrientation);
 			mCamera.startPreview();
 			mPreviewStarted = true;
 			mUpdated = true;
